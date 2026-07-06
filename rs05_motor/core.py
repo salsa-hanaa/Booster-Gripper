@@ -77,10 +77,10 @@ class RS05Motor:
             angle_rad = uint16_to_float(pos_raw, *POS_RANGE)
             return angle_rad
 
-    def check_joints(self, motor_id: int) -> float:
+    def check_position(self, motor_id: int) -> float:
         """Baca dan cetak posisi motor saat ini secara instan (untuk monitoring)."""
         angle_rad = self.read_joints(motor_id)
-        print(f"[CHECK_JOINTS] Motor ID {motor_id} -> Posisi saat ini: {angle_rad:.4f} rad")
+        print(f"[CHECK_POSITION] Motor ID {motor_id} -> Posisi saat ini: {angle_rad:.4f} rad")
         return angle_rad
 
     def save_motion(self, name: str, angle_rad: float):

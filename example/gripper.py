@@ -14,7 +14,7 @@ if __name__ == "__main__":
     time.sleep(0.2)
 
     print("Posisi sebelum: ")
-    motor.check_joints(MOTOR_ID)
+    motor.check_position(MOTOR_ID)
     time.sleep(0.2)
 
     print("Menggerakkan Gripper ke Posisi 10.0 Radian...")
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     time.sleep(1.5)
 
     print("Posisi setelah: ")
-    motor.check_joints(MOTOR_ID)
+    motor.check_position(MOTOR_ID)
     time.sleep(0.2)
 
     # print("Mematikan Motor (Stop)...")
