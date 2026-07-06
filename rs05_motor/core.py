@@ -34,9 +34,6 @@ class RS05Motor:
         logging.info(f"Mengirim perintah ENABLE ke Motor ID: {motor_id}")
         return self._execute_and_log("ENABLE_MOTOR", frame)
     
-    # "41541807e8bc0800000000000000000d0a"
-
-
     def stop(self, motor_id: int):
         payload = bytes(8)
         frame = build_at_frame(COMM_TYPE_STOP, DEFAULT_HOST_ID, motor_id, payload)

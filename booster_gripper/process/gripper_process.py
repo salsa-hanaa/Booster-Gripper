@@ -23,6 +23,15 @@ class GripperProcess:
                 motor.move_gripper(joint.id, angle_rad=self.deg_to_rad(joint.angle), kp=kp, kd=kd)
         time.sleep(self.rate_seconds)
 
+    def set_torque(self, ids: list[int], torque_enable: bool):
+        for id in ids:
+            motor = self.motors.get(id)
+            if motor is not None:
+                if torque_enable:
+                    motor.enable(id)
+                else:
+                    motor.stop(id)
+
     def get_motor_state(self):
         for id in self.motor_ids:
             self.motor_state[id] = self.motors[id].check_position(id)
@@ -31,9 +40,13 @@ class GripperProcess:
     def deg_to_rad(self, degrees: float) -> float:
         return degrees * (3.141592653589793 / 180.0)
     
+    def rad_to_deg(self, radians: float) -> float:
+        return radians * (180.0 / 3.141592653589793)
+    
     def stop_motor(self, motor_id: int):
         self.motors[motor_id].stop(motor_id)
 
     def close(self):
         for motor in self.motors.values():
             motor.close()
+
