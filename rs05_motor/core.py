@@ -33,6 +33,9 @@ class RS05Motor:
         frame = build_at_frame(COMM_TYPE_ENABLE, DEFAULT_HOST_ID, motor_id, payload)
         logging.info(f"Mengirim perintah ENABLE ke Motor ID: {motor_id}")
         return self._execute_and_log("ENABLE_MOTOR", frame)
+    
+    # "41541807e8bc0800000000000000000d0a"
+
 
     def stop(self, motor_id: int):
         payload = bytes(8)
@@ -65,7 +68,7 @@ class RS05Motor:
 
     def read_joints(self, motor_id: int) -> float:
             payload = bytes(8)
-            frame = build_at_frame(COMM_TYPE_STOP, DEFAULT_HOST_ID, motor_id, payload)
+            frame = build_at_frame(COMM_TYPE_ENABLE, DEFAULT_HOST_ID, motor_id, payload)
             rx_bytes = self._execute_and_log("READ_JOINTS_TRIGGER", frame)
 
             if not rx_bytes or len(rx_bytes) < 17:
