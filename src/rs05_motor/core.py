@@ -1,46 +1,40 @@
 import logging
 from .communicate import SerialTransport
-from .conversion import float_to_uint16, POS_RANGE, VEL_RANGE, KP_RANGE, KD_RANGE, TORQUE_RANGE
+from .conversion import (
+    float_to_uint16, uint16_to_float,
+    POS_RANGE, VEL_RANGE, KP_RANGE, KD_RANGE, TORQUE_RANGE
+)
 from .bit_convert import build_at_frame, COMM_TYPE_ENABLE, COMM_TYPE_STOP, COMM_TYPE_MOTION, DEFAULT_HOST_ID
-
-# Set up logging agar formatnya rapi dan gampang dibaca
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class RS05Motor:
     def __init__(self, port: str, baudrate: int = 921600, timeout: float = 0.2):
         logging.info(f"Menghubungkan ke port {port} dengan baudrate {baudrate}...")
         self.transport = SerialTransport(port, baudrate, timeout)
+        self.saved_motions = {}
         logging.info("Inisialisasi handshake port selesai.")
 
     def _execute_and_log(self, action_name: str, frame: bytes) -> bytes:
-        """Helper untuk mengirim frame, mencetak TxHex, dan menangkap RxHex dari motor."""
-        # Cetak log TxHex dalam bentuk string lowercase hex (mirip hasil logmu)
         tx_hex = frame.hex()
         print(f"\n[{action_name}]")
         print(f"  TxHex: \"{tx_hex}\"")
-        
-        # Kirim data ke hardware
+
         rx_bytes = self.transport.send_frame(frame, read_reply=True)
-        
-        # Cetak log RxHex jika motor memberikan balasan
+
         if rx_bytes:
-            # Mengambil data hex bersih dari respons (menghilangkan noise jika ada)
             rx_hex = rx_bytes.hex()
             print(f"  RxHex: \"{rx_hex}\"")
         else:
             print("  RxHex: \"No Response/Timeout\"")
-            
         return rx_bytes
 
     def enable(self, motor_id: int):
-        """Nyalakan/aktifkan motor."""
         payload = bytes(8)
         frame = build_at_frame(COMM_TYPE_ENABLE, DEFAULT_HOST_ID, motor_id, payload)
         logging.info(f"Mengirim perintah ENABLE ke Motor ID: {motor_id}")
         return self._execute_and_log("ENABLE_MOTOR", frame)
 
     def stop(self, motor_id: int):
-        """Matikan motor."""
         payload = bytes(8)
         frame = build_at_frame(COMM_TYPE_STOP, DEFAULT_HOST_ID, motor_id, payload)
         logging.info(f"Mengirim perintah STOP ke Motor ID: {motor_id}")
@@ -48,15 +42,11 @@ class RS05Motor:
 
     def move_gripper(self, motor_id: int, angle_rad: float, kp: float, kd: float,
                      velocity: float = 0.0, torque: float = 0.0):
-        """
-        Gerakkan motor ke posisi target pakai mode MIT (Motion Control).
-        Menampilkan log parameter input dunia nyata agar mudah dicocokkan dengan UI.
-        """
         logging.info(
             f"Kirim Perintah Gerak -> ID: {motor_id} | Target Angle: {angle_rad:.2f} rad "
             f"| Kp: {kp:.1f} | Kd: {kd:.1f} | Target Vel: {velocity:.1f} | Torque FF: {torque:.1f}"
         )
-        
+
         pos_raw = float_to_uint16(angle_rad, *POS_RANGE)
         vel_raw = float_to_uint16(velocity, *VEL_RANGE)
         kp_raw  = float_to_uint16(kp, *KP_RANGE)
@@ -73,7 +63,41 @@ class RS05Motor:
         frame = build_at_frame(COMM_TYPE_MOTION, torque_raw, motor_id, payload)
         return self._execute_and_log("MOTION_CONTROL", frame)
 
+    def read_joints(self, motor_id: int) -> float:
+            payload = bytes(8)
+            frame = build_at_frame(COMM_TYPE_STOP, DEFAULT_HOST_ID, motor_id, payload)
+            rx_bytes = self._execute_and_log("READ_JOINTS_TRIGGER", frame)
+
+            if not rx_bytes or len(rx_bytes) < 17:
+                logging.warning("Respons tidak lengkap/timeout saat read_joints, kembalikan 0.0 rad.")
+                return 0.0
+
+            data_field = rx_bytes[7:15]
+            pos_raw = int.from_bytes(data_field[0:2], "big")
+            angle_rad = uint16_to_float(pos_raw, *POS_RANGE)
+            return angle_rad
+
+    def check_joints(self, motor_id: int) -> float:
+        """Baca dan cetak posisi motor saat ini secara instan (untuk monitoring)."""
+        angle_rad = self.read_joints(motor_id)
+        print(f"[CHECK_JOINTS] Motor ID {motor_id} -> Posisi saat ini: {angle_rad:.4f} rad")
+        return angle_rad
+
+    def save_motion(self, name: str, angle_rad: float):
+        """Simpan posisi (rad) ke memori gerakan dengan key nama gerakan."""
+        self.saved_motions[name] = angle_rad
+        logging.info(f"Gerakan '{name}' disimpan pada posisi {angle_rad:.4f} rad")
+
+    def play_motion(self, motor_id: int, name: str, kp: float, kd: float):
+        """Mainkan ulang gerakan yang sudah disimpan sebelumnya via save_motion."""
+        if name not in self.saved_motions:
+            logging.error(f"Gerakan '{name}' tidak ditemukan di saved_motions.")
+            return None
+
+        angle_rad = self.saved_motions[name]
+        logging.info(f"Memutar ulang gerakan '{name}' -> target {angle_rad:.4f} rad")
+        return self.move_gripper(motor_id, angle_rad=angle_rad, kp=kp, kd=kd)
+
     def close(self):
-        """Tutup koneksi serial."""
         logging.info("Menutup koneksi serial.")
         self.transport.close()
