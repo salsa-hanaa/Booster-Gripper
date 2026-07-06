@@ -29,7 +29,7 @@ class GripperNode:
         for motor_id, angle in motor_state.items():
             joint = Joint()
             joint.id = motor_id
-            joint.angle = motor_state[motor_id]
+            joint.position = motor_state[motor_id]
             msg.joints.append(joint)
             
         self.gripper_state_publisher.publish(msg)

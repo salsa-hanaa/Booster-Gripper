@@ -8,19 +8,19 @@ class GripperProcess:
         self.port = port
         self.rate_seconds = rate_seconds
         self.motor_ids = motor_ids
-        self.motor_state: dict[int, float] = {mid: 0.0 for mid in motor_ids}
+        self.motor_state: dict[int, float] = {id: 0.0 for id in motor_ids}
         self.motors = dict[int, RS05Motor] ({mid: RS05Motor(port) for mid in motor_ids})
         self.initialize_motors()
 
     def initialize_motors(self):
-        for motor in self.motors.values():
-            motor.enable(self.motor_id)
+        for id, motor in self.motors.items():
+            motor.enable(id)
 
     def move_to_position(self, set_joints_msg: SetJoints, kp: float = 50.0, kd: float = 1.0):
         for joint in set_joints_msg.joints:
             motor = self.motors.get(joint.id)
             if motor is not None:
-                motor.move_gripper(joint.id, angle_rad=self.deg_to_rad(joint.angle), kp=kp, kd=kd)
+                motor.move_gripper(joint.id, angle_rad=self.deg_to_rad(joint.position), kp=kp, kd=kd)
         time.sleep(self.rate_seconds)
 
     def set_torque(self, ids: list[int], torque_enable: bool):
