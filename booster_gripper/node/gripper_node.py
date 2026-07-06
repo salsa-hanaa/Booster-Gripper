@@ -14,6 +14,12 @@ class GripperNode:
             self.set_grippers_callback,
             10
         )
+        self.set_torque_subscription = self.node.create_subscription(
+            SetTorques,
+            '/joint/set_gripper_torques',
+            self.set_torque_callback,
+            10
+        )
 
     def set_grippers_callback(self, msg: SetJoints):
         self.gripper_process.move_to_position(msg)
