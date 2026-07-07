@@ -25,9 +25,8 @@ class GripperNode:
         self.gripper_process.move_to_position(msg)
 
     def set_torque_callback(self, msg: SetTorques):
-        msg = SetTorques()
-        for id in msg.torques:
-            self.gripper_process.set_torque(id, msg.torques)
+        for id in msg.ids:
+            self.gripper_process.set_torque(id, msg.torque_enable)
 
     def publish_gripper_state(self):
         motor_state = self.gripper_process.get_motor_state()

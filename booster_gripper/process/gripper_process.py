@@ -19,18 +19,19 @@ class GripperProcess:
     def move_to_position(self, set_joints_msg: SetJoints, kp: float = 50.0, kd: float = 1.0):
         for joint in set_joints_msg.joints:
             motor = self.motors.get(joint.id)
+            print(f"Moving Motor ID: {joint.id} to Position: {joint.position} degrees")
             if motor is not None:
                 motor.move_gripper(joint.id, angle_rad=self.deg_to_rad(joint.position), kp=kp, kd=kd)
         time.sleep(self.rate_seconds)
 
-    def set_torque(self, ids: list[int], torque_enable: bool):
-        for id in ids:
-            motor = self.motors.get(id)
-            if motor is not None:
-                if torque_enable:
-                    motor.enable(id)
-                else:
-                    motor.stop(id)
+    def set_torque(self, id, torque_enable: bool):
+        motor = self.motors.get(id)
+        if motor is not None:
+            if torque_enable:
+                motor.move_gripper(id, angle_rad=self.motor_state[id], kp=50.0, kd=1.0)
+            else:
+                motor.move_gripper(id, angle_rad=self.motor_state[id], kp=0.0, kd=0.0)
+                print(f"Disabling torque for Motor ID: {id}")
 
     def get_motor_state(self):
         for id in self.motor_ids:
