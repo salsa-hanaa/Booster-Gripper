@@ -3,6 +3,14 @@ import time
 from rs05_motor import RS05Motor
 from booster_joint_interface.msg import SetJoints
 
+MAX_LIMIT_RIGHT = 0
+MIN_LIMIT_RIGHT = -1.5
+MAX_LIMIT_LEFT = 1.5
+MIN_LIMIT_LEFT = 0
+
+LEFT = 22
+RIGHT = 23
+
 class GripperProcess:
     def __init__(self, port: str, rate_seconds: float, motor_ids: list[int]):
         self.port = port
@@ -21,7 +29,13 @@ class GripperProcess:
             motor = self.motors.get(joint.id)
             print(f"Moving Motor ID: {joint.id} to Position: {joint.position} degrees")
             if motor is not None:
-                motor.move_gripper(joint.id, angle_rad=self.deg_to_rad(joint.position), kp=kp, kd=kd)
+                target_pos = joint.position
+                if (joint.id == LEFT):
+                    target_pos = max(MIN_LIMIT_LEFT, min(MAX_LIMIT_LEFT, joint.position))
+                elif (joint.id == RIGHT):
+                    target_pos = max(MIN_LIMIT_RIGHT, min(MAX_LIMIT_RIGHT, joint.position))
+                    print("target: " + str(target_pos))
+                motor.move_gripper(joint.id, angle_rad=target_pos, kp=kp, kd=kd)
         time.sleep(self.rate_seconds)
 
     def set_torque(self, id, torque_enable: bool):
