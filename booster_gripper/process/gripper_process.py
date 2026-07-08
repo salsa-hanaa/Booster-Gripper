@@ -36,7 +36,6 @@ class GripperProcess:
                     target_pos = max(MIN_LIMIT_RIGHT, min(MAX_LIMIT_RIGHT, joint.position))
                     print("target: " + str(target_pos))
                 motor.move_gripper(joint.id, angle_rad=target_pos, kp=kp, kd=kd)
-        time.sleep(self.rate_seconds)
 
     def set_torque(self, id, torque_enable: bool):
         motor = self.motors.get(id)
