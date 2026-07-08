@@ -1,3 +1,5 @@
+import time
+
 from rclpy.node import Node
 from booster_joint_interface.msg import SetJoints, SetTorques, Joint
 from booster_gripper.process.gripper_process import GripperProcess
@@ -20,6 +22,18 @@ class GripperNode:
             self.set_torque_callback,
             10
         )
+        # self.node.get_logger().info("Mengirim perintah inisialisasi otomatis ke 1.0 Radian...")
+
+        # time.sleep(0.5)
+        
+        # init_msg = SetJoints()
+        # for m_id in motor_ids:
+        #     j = Joint()
+        #     j.id = m_id
+        #     j.position = 0.0
+        #     init_msg.joints.append(j)
+
+        # self.gripper_process.move_to_position(init_msg)
 
     def set_grippers_callback(self, msg: SetJoints):
         self.gripper_process.move_to_position(msg)
