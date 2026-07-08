@@ -1,39 +1,28 @@
-import time
-
+# gripper_node.py
 from rclpy.node import Node
 from booster_joint_interface.msg import SetJoints, SetTorques, Joint
 from booster_gripper.process.gripper_process import GripperProcess
+
 
 class GripperNode:
     def __init__(self, node: Node, port: str, rate_seconds: float, motor_ids: list[int]):
         self.node = node
         self.gripper_state_publisher = self.node.create_publisher(SetJoints, '/joint/gripper_state', 10)
-        self.timer = self.node.create_timer(rate_seconds, self.publish_gripper_state)
         self.gripper_process = GripperProcess(port, rate_seconds, motor_ids)
+        self.timer = self.node.create_timer(rate_seconds, self.tick)
+
         self.set_grippers_subscription = self.node.create_subscription(
-            SetJoints,
-            '/joint/set_grippers',
-            self.set_grippers_callback,
-            10
+            SetJoints, '/joint/set_grippers', self.set_grippers_callback, 10
         )
         self.set_torque_subscription = self.node.create_subscription(
-            SetTorques,
-            '/joint/set_gripper_torques',
-            self.set_torque_callback,
-            10
+            SetTorques, '/joint/set_gripper_torques', self.set_torque_callback, 10
         )
-        # self.node.get_logger().info("Mengirim perintah inisialisasi otomatis ke 1.0 Radian...")
 
-        # time.sleep(0.5)
-        
-        # init_msg = SetJoints()
-        # for m_id in motor_ids:
-        #     j = Joint()
-        #     j.id = m_id
-        #     j.position = 0.0
-        #     init_msg.joints.append(j)
-
-        # self.gripper_process.move_to_position(init_msg)
+    def tick(self):
+        if self.gripper_process.is_interpolating():
+            self.gripper_process.step_interpolation()
+            return
+        self.publish_gripper_state()
 
     def set_grippers_callback(self, msg: SetJoints):
         self.gripper_process.move_to_position(msg)
@@ -48,7 +37,6 @@ class GripperNode:
         for motor_id, angle in motor_state.items():
             joint = Joint()
             joint.id = motor_id
-            joint.position = motor_state[motor_id]
+            joint.position = angle
             msg.joints.append(joint)
-            
         self.gripper_state_publisher.publish(msg)
