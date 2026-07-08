@@ -49,7 +49,7 @@ class GripperProcess:
 
     def get_motor_state(self):
         for id in self.motor_ids:
-            self.motor_state[id] = self.motors[id].check_position(id)
+            self.motor_state[id] = self.motors[id].check_joints(id)
         return self.motor_state
     
     def deg_to_rad(self, degrees: float) -> float:
